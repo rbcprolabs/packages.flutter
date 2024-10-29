@@ -10,6 +10,8 @@ import 'package:epub_view/src/data/models/paragraph.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+//import 'package:flutter_html_all/flutter_html_all.dart';
+//import 'package:flutter_html/flutter_html.dart' as flutter_html;
 
 export 'package:epubx/epubx.dart' hide Image;
 
@@ -316,60 +318,120 @@ class _EpubViewState extends State<EpubView> {
         ),
       );
 
-  static Widget _chapterBuilder(
-    BuildContext context,
-    EpubViewBuilders builders,
-    EpubBook document,
-    List<EpubChapter> chapters,
-    List<Paragraph> paragraphs,
-    int index,
-    int chapterIndex,
-    int paragraphIndex,
-    ExternalLinkPressed onExternalLinkPressed,
-  ) {
-    if (paragraphs.isEmpty) {
-      return Container();
-    }
+  // static Widget _chapterBuilder(
+  //   BuildContext context,
+  //   EpubViewBuilders builders,
+  //   EpubBook document,
+  //   List<EpubChapter> chapters,
+  //   List<Paragraph> paragraphs,
+  //   int index,
+  //   int chapterIndex,
+  //   int paragraphIndex,
+  //   ExternalLinkPressed onExternalLinkPressed,
+  // ) {
+  //   if (paragraphs.isEmpty) {
+  //     return Container();
+  //   }
 
-    final defaultBuilder = builders as EpubViewBuilders<DefaultBuilderOptions>;
-    final options = defaultBuilder.options;
+  //   final defaultBuilder = builders as EpubViewBuilders<DefaultBuilderOptions>;
+  //   final options = defaultBuilder.options;
 
-    return Column(
-      children: <Widget>[
-        if (chapterIndex >= 0 && paragraphIndex == 0)
-          builders.chapterDividerBuilder(chapters[chapterIndex]),
-        Html(
-          data: paragraphs[index].element.outerHtml,
-          onLinkTap: (href, _, __) => onExternalLinkPressed(href!),
-          style: {
-            'html': Style(
-              padding: HtmlPaddings.only(
-                top: (options.paragraphPadding as EdgeInsets?)?.top,
-                right: (options.paragraphPadding as EdgeInsets?)?.right,
-                bottom: (options.paragraphPadding as EdgeInsets?)?.bottom,
-                left: (options.paragraphPadding as EdgeInsets?)?.left,
-              ),
-            ).merge(Style.fromTextStyle(options.textStyle)),
-          },
-          extensions: [
-            TagExtension(
-              tagsToExtend: {"img"},
-              builder: (imageContext) {
-                final url =
-                    imageContext.attributes['src']!.replaceAll('../', '');
-                final content = Uint8List.fromList(
-                    document.Content!.Images![url]!.Content!);
-                return Image(
-                  image: MemoryImage(content),
-                );
-              },
-            ),
-          ],
-        ),
-      ],
-    );
+  //   return Column(
+  //     children: <Widget>[
+  //       if (chapterIndex >= 0 && paragraphIndex == 0)
+  //         builders.chapterDividerBuilder(chapters[chapterIndex]),
+  //       Html(
+  //         data: paragraphs[index].element.outerHtml,
+  //         onLinkTap: (href, _, __) => onExternalLinkPressed(href!),
+  //         style: {
+  //           'html': Style(
+  //             padding: HtmlPaddings.only(
+  //               top: (options.paragraphPadding as EdgeInsets?)?.top,
+  //               right: (options.paragraphPadding as EdgeInsets?)?.right,
+  //               bottom: (options.paragraphPadding as EdgeInsets?)?.bottom,
+  //               left: (options.paragraphPadding as EdgeInsets?)?.left,
+  //             ),
+  //           ).merge(Style.fromTextStyle(options.textStyle)),
+  //         },
+  //         extensions: [
+  //           TagExtension(
+  //             tagsToExtend: {"img"},
+  //             builder: (imageContext) {
+  //               final url =
+  //                   imageContext.attributes['src']!.replaceAll('../', '');
+  //               final content = Uint8List.fromList(
+  //                   document.Content!.Images![url]!.Content!);
+  //               return Image(
+  //                 image: MemoryImage(content),
+  //               );
+  //             },
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
+
+
+static Widget _chapterBuilder(
+  BuildContext context,
+  EpubViewBuilders builders,
+  EpubBook document,
+  List<EpubChapter> chapters,
+  List<Paragraph> paragraphs,
+  int index,
+  int chapterIndex,
+  int paragraphIndex,
+  ExternalLinkPressed onExternalLinkPressed,
+) {
+  if (paragraphs.isEmpty) {
+    return Container();
   }
 
+  final defaultBuilder = builders as EpubViewBuilders<DefaultBuilderOptions>;
+  final options = defaultBuilder.options;
+
+  return Column(
+    children: <Widget>[
+      if (chapterIndex >= 0 && paragraphIndex == 0)
+        builders.chapterDividerBuilder(chapters[chapterIndex]),
+      Html(
+        data: paragraphs[index].element.outerHtml,
+        style: {
+          'html': Style(
+            padding: HtmlPaddings.only(
+              top: (options.paragraphPadding as EdgeInsets?)?.top,
+              right: (options.paragraphPadding as EdgeInsets?)?.right,
+              bottom: (options.paragraphPadding as EdgeInsets?)?.bottom,
+              left: (options.paragraphPadding as EdgeInsets?)?.left,
+            ),
+          ).merge(Style.fromTextStyle(options.textStyle)),
+        },
+        extensions: [
+          TagExtension(
+            tagsToExtend: {"img"},
+            builder: (imageContext) {
+              final url =
+                  imageContext.attributes['src']!.replaceAll('../', '');
+              final content = Uint8List.fromList(
+                  document.Content!.Images![url]!.Content!);
+              return Image(
+                image: MemoryImage(content),
+              );
+            },
+          ),
+        ],
+      ),
+      Padding(
+        padding: options.paragraphPadding ?? EdgeInsets.zero,
+        child: SelectableText(
+          paragraphs[index].element.text,
+          style: options.textStyle,
+        ),
+      ),
+    ],
+  );
+}
   Widget _buildLoaded(BuildContext context) {
     return ScrollablePositionedList.builder(
       shrinkWrap: widget.shrinkWrap,
