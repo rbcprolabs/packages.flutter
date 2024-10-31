@@ -36,6 +36,12 @@ class PdfControllerPinch extends TransformationController
   _PdfViewPinchState? _state;
   PdfDocument? _document;
 
+  // Provide document progress.
+  // document start documentProgress = 0.0,
+  // document end documentProgress = 1.0,
+  double _documentProgress = 0;
+  double get documentProgress => _documentProgress;
+
   /// Actual page number wrapped with ValueNotifier
   @override
   late final ValueNotifier<int> pageListenable = ValueNotifier(initialPage);

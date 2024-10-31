@@ -116,6 +116,9 @@ _pdfController.nextPage(duration: Duration(milliseconds: 250), curve: Curves.eas
 
 // Animate to previous page
 _pdfController.previousPage(duration: Duration(milliseconds: 250), curve: Curves.easeOut);
+
+// Get document progrees 0.0 - start, 1.0 - end
+_pdfController.documentProgress;
 ```
 ### Additional pdf info:
 ```dart
