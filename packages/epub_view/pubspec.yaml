@@ -18,7 +18,8 @@ dependencies:
   scrollable_positioned_list: ^0.3.8
   collection: ^1.17.1
   universal_file: ^1.0.0
-
+  http: ^1.1.2
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
