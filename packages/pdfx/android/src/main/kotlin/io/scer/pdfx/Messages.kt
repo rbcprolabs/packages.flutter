@@ -25,6 +25,10 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.lang.RuntimeException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 class Messages(private val binding : FlutterPlugin.FlutterPluginBinding,
@@ -153,43 +157,71 @@ class Messages(private val binding : FlutterPlugin.FlutterPluginBinding,
         result: Pigeon.Result<Pigeon.RenderPageReply>
     ) {
         val resultResponse = Pigeon.RenderPageReply()
-        try {
-            val pageId = message.pageId!!
-            val width = message.width!!.toInt()
-            val height = message.height!!.toInt()
-            val format = message.format?.toInt() ?: 1 //0 Bitmap.CompressFormat.PNG
-            val forPrint = message.forPrint ?: false;
-            val backgroundColor = message.backgroundColor
-            val color = if (backgroundColor != null) Color.parseColor(backgroundColor) else Color.TRANSPARENT
 
-            val crop = message.crop!!
-            val cropX = if (crop) message.cropX!!.toInt() else 0
-            val cropY = if (crop) message.cropY!!.toInt() else 0
-            val cropH = if (crop) message.cropHeight!!.toInt() else 0
-            val cropW = if (crop) message.cropWidth!!.toInt() else 0
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val pageId = message.pageId ?: run {
+                    result.error(PdfRendererException("pdf_renderer", "Page ID is null", null))
+                    return@launch
+                }
 
-            val quality = message.quality?.toInt() ?: 100
+                val width = message.width?.toInt() ?: run {
+                    result.error(PdfRendererException("pdf_renderer", "Width is null", null))
+                    return@launch
+                }
 
-            val page = pages.get(pageId)
+                val height = message.height?.toInt() ?: run {
+                    result.error(PdfRendererException("pdf_renderer", "Height is null", null))
+                    return@launch
+                }
 
-            val tempOutFileExtension = when (format) {
-                0 -> "jpg"
-                1 -> "png"
-                2 -> "webp"
-                else -> "jpg"
+                val format = message.format?.toInt() ?: 1
+                val backgroundColor = message.backgroundColor
+                val color = backgroundColor?.let { Color.parseColor(it) } ?: Color.TRANSPARENT
+
+                val crop = message.crop ?: false
+                val cropX = if (crop) message.cropX?.toInt() ?: 0 else 0
+                val cropY = if (crop) message.cropY?.toInt() ?: 0 else 0
+                val cropH = if (crop) message.cropHeight?.toInt() ?: 0 else 0
+                val cropW = if (crop) message.width?.toInt() ?: 0 else 0
+
+                val quality = message.quality?.toInt() ?: 100
+
+                val page = pages.get(pageId)
+                if (page == null) {
+                    result.error(PdfRendererException("pdf_renderer", "Page not found for ID: $pageId", null))
+                    return@launch
+                }
+
+                val tempOutFileExtension = when (format) {
+                    0 -> "jpg"
+                    1 -> "png"
+                    2 -> "webp"
+                    else -> "jpg"
+                }
+
+                val tempOutFolder = File(binding.applicationContext.cacheDir, "pdf_renderer_cache").apply {
+                    mkdirs()
+                }
+
+                val tempOutFile = File(tempOutFolder, "$randomFilename.$tempOutFileExtension")
+
+                //  background thread render
+                val pageImage = page.render(
+                    tempOutFile, width, height, color, format, crop, cropX, cropY, cropW, cropH, quality
+                )
+
+                withContext(Dispatchers.Main) {
+                    resultResponse.path = pageImage.path
+                    resultResponse.width = pageImage.width.toLong()
+                    resultResponse.height = pageImage.height.toLong()
+                    result.success(resultResponse)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    result.error(PdfRendererException("pdf_renderer", "Unexpected error", e))
+                }
             }
-            val tempOutFolder = File(binding.applicationContext.cacheDir, "pdf_renderer_cache")
-            tempOutFolder.mkdirs()
-            val tempOutFile = File(tempOutFolder, "$randomFilename.$tempOutFileExtension")
-
-            val pageImage = page.render(tempOutFile, width, height, color, format, crop, cropX, cropY, cropW, cropH, quality, forPrint)
-            resultResponse.path = pageImage.path
-            resultResponse.width = pageImage.width.toLong()
-            resultResponse.height = pageImage.height.toLong()
-            result.success(resultResponse)
-
-        } catch (e: Exception) {
-            result.error(PdfRendererException("pdf_renderer", "Unexpected error", e))
         }
     }
 
