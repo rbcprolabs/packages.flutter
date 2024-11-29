@@ -14,7 +14,6 @@ dependencies:
   flutter_web_plugins:
     sdk: flutter
   plugin_platform_interface: ^2.1.8
-  device_info_plus: ^11.0.0
   uuid: ^4.5.0
   meta: ^1.15.0
   extension: ^0.6.0
