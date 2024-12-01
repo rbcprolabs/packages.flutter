@@ -31,7 +31,7 @@ class Messages(private val binding : FlutterPlugin.FlutterPluginBinding,
                private val documents: DocumentRepository,
                private val pages: PageRepository) : Pigeon.PdfxApi {
 
-    private val textures: SparseArray<TextureRegistry.SurfaceTextureEntry> = SparseArray()
+    private val textures: SparseArray<TextureRegistry.SurfaceProducer> = SparseArray()
 
     override fun openDocumentData(
         message: Pigeon.OpenDataMessage,
@@ -207,7 +207,7 @@ class Messages(private val binding : FlutterPlugin.FlutterPluginBinding,
     }
 
     override fun registerTexture(): Pigeon.RegisterTextureReply {
-        val surfaceTexture = binding.textureRegistry.createSurfaceTexture()
+        val surfaceTexture = binding.textureRegistry.createSurfaceProducer()
         val id = surfaceTexture.id().toInt()
         textures.put(id, surfaceTexture)
         val result = Pigeon.RegisterTextureReply()
@@ -253,10 +253,9 @@ class Messages(private val binding : FlutterPlugin.FlutterPluginBinding,
                 val texWidth = message.textureWidth!!.toInt()
                 val texHeight = message.textureHeight!!.toInt()
                 if (texWidth != 0 && texHeight != 0) {
-                    tex.surfaceTexture().setDefaultBufferSize(texWidth, texHeight)
+                    tex.setSize(texWidth, texHeight)
                 }
-
-                Surface(tex.surfaceTexture()).use {
+                tex.surface.use {
                     val canvas = it.lockCanvas(Rect(destX, destY, width, height))
 
                     canvas.drawBitmap(bmp, destX.toFloat(), destY.toFloat(), null)
@@ -280,7 +279,7 @@ class Messages(private val binding : FlutterPlugin.FlutterPluginBinding,
         val width = message.width!!.toInt()
         val height = message.height!!.toInt()
         val tex = textures[texId]
-        tex?.surfaceTexture()?.setDefaultBufferSize(width, height)
+        tex?.setSize(width, height)
         result.success(null)
     }
 
